@@ -440,6 +440,19 @@ FEATURE and FILENAME are the same arguments as the `require' function."
      "compile-angel-compile-features: %s" feature)
     (compile-angel--compile-before-loading nil feature)))
 
+(defun compile-angel--after-load-function (file)
+  "Compile FILE after load."
+  (compile-angel--debug-message
+   "compile-angel--after-load-function: %s" file)
+  (if (string= (file-name-extension file) "elc")
+      (compile-angel--debug-message
+       "compile-angel--after-load-function: Already compiled: %s" file)
+    (progn
+      (compile-angel--debug-message
+       "POSSIBLE ISSUE: compile-angel--after-load-function: Not compiled: %s"
+       file)
+      (compile-angel--compile-before-loading file))))
+
 ;;;###autoload
 (define-minor-mode compile-angel-on-load-mode
   "Toggle `compile-angel-mode' then compiles .el files before they are loaded."
@@ -463,6 +476,16 @@ FEATURE and FILENAME are the same arguments as the `require' function."
     (advice-remove 'require #'compile-angel--advice-before-require)
     (advice-remove 'load #'compile-angel--advice-before-load)
     (advice-remove 'eval-after-load #'compile-angel--advice-eval-after-load)))
+
+;;;###autoload
+(define-minor-mode compile-angel-after-load-mode
+  "Toggle `compile-angel-mode' then compiles .el files after they are loaded."
+  :global t
+  :lighter " CompAngelL"
+  :group 'compile-angel
+  (if compile-angel-after-load-mode
+      (add-hook 'after-load-functions #'compile-angel--after-load-function)
+    (remove-hook 'after-load-functions #'compile-angel--after-load-function)))
 
 ;;;###autoload
 (define-minor-mode compile-angel-on-save-mode
