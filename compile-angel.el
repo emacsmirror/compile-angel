@@ -116,6 +116,7 @@ listed in the `features' variable are compiled.")
 (defvar compile-angel--list-compiled-files (make-hash-table :test 'equal))
 (defvar compile-angel--currently-compiling (make-hash-table :test 'equal))
 (defvar compile-angel--compiling-p nil)
+(defvar compile-angel--list-currently-compiling nil)
 
 ;;; Functions
 
@@ -362,16 +363,24 @@ EL-FILE, FEATURE, and NOSUFFIX are the same arguments as `load' and `require'."
             compile-angel-enable-native-compile)
     (let* ((feature-name (compile-angel--feature-to-feature-name feature)))
       (unwind-protect
-          (if (and feature-name
-                   (gethash feature-name compile-angel--currently-compiling))
+          (if (or
+               (and el-file
+                    (gethash el-file compile-angel--currently-compiling))
+               (and feature-name
+                    (gethash feature-name compile-angel--currently-compiling)))
               (compile-angel--debug-message
                "SKIP (To prevent feature recursive compilation): %s | %s"
                el-file feature)
             (compile-angel--debug-message "COMPILATION ARGS: %s | %s"
                                           el-file feature-name)
-            (setq el-file (compile-angel--guess-el-file
-                           el-file feature-name
-                           nosuffix substitute-env-vars))
+            (let ((original-el-file el-file))
+              (setq el-file (compile-angel--guess-el-file
+                             el-file feature-name
+                             nosuffix substitute-env-vars))
+              (when (and original-el-file
+                         (not (string= original-el-file el-file)))
+                (puthash original-el-file t compile-angel--currently-compiling)))
+
             (cond
              ((not el-file)
               (compile-angel--debug-message
@@ -383,7 +392,9 @@ EL-FILE, FEATURE, and NOSUFFIX are the same arguments as `load' and `require'."
                nil)
               (compile-angel--debug-message
                "SKIP (To prevent .el file recursive compilation): %s | %s"
-               el-file feature))
+               el-file feature)
+
+              (compile-angel--debug-message "\n%s\n" compile-angel--currently-compiling))
 
              ((not (compile-angel--need-compilation-p el-file feature-name))
               (compile-angel--debug-message
@@ -400,7 +411,9 @@ EL-FILE, FEATURE, and NOSUFFIX are the same arguments as `load' and `require'."
                     (when feature-name
                       (puthash feature-name t compile-angel--currently-compiling))
                     (setq compile-angel--compiling-p t)
-                    (compile-angel--compile-elisp el-file))
+                    (unless (member el-file compile-angel--list-currently-compiling)
+                      (let ((compile-angel--list-currently-compiling (cons el-file compile-angel--list-currently-compiling)))
+                        (compile-angel--compile-elisp el-file))))
                 (progn
                   (setq compile-angel--compiling-p nil)
                   (remhash el-file compile-angel--currently-compiling))))))
