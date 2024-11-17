@@ -256,9 +256,12 @@ FEATURE-NAME is a string representing the feature name being loaded."
    ((not (or (not compile-angel-on-load-mode-compile-once)
              (and
               (not (gethash el-file compile-angel--list-compiled-files))
-              (or (not feature-name)
-                  (not (gethash feature-name
-                                compile-angel--list-compiled-features))))))
+              t
+              ;; TODO remove
+              ;; (or (not feature-name)
+              ;;     (not (gethash feature-name
+              ;;                   compile-angel--list-compiled-features)))
+              )))
     (compile-angel--debug-message
      "SKIP (In the skip hash list): %s | %s" el-file feature-name)
     nil)
@@ -433,11 +436,12 @@ SUBSTITUTE-ENV-VARS Substitute environment variables referred.
 EL-FILE, FEATURE, and NOSUFFIX are the same arguments as `load' and `require'."
   (when (or compile-angel-enable-byte-compile
             compile-angel-enable-native-compile)
-    ;; (compile-angel--compile-postponed)
     (unwind-protect
-        (compile-angel--entry-point-compile el-file feature
-                                            nosuffix substitute-env-vars)
-      (compile-angel--compile-postponed))))
+        (compile-angel--compile-postponed)
+      (unwind-protect
+          (compile-angel--entry-point-compile el-file feature
+                                              nosuffix substitute-env-vars)
+        (compile-angel--compile-postponed)))))
 
 (defun compile-angel--advice-before-require (feature
                                              &optional filename _noerror)
