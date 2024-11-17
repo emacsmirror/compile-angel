@@ -440,6 +440,21 @@ FEATURE and FILENAME are the same arguments as the `require' function."
      "compile-angel-compile-features: %s" feature)
     (compile-angel--compile-before-loading nil feature)))
 
+(defun compile-angel--ignore-useless-messages (original-func &rest args)
+  "Suppress Wrote messages when calling ORIGINAL-FUNC with ARGS."
+  (let ((original-message #'message))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (format-string &rest args)
+                   ;; (unless (string-prefix-p "Wrote" format-string)
+                   ;;   (apply original-message (concat "INHIBIT: %s"
+                   ;;                                   format-string)
+                   ;;          args))
+                   ;; (unless (string-prefix-p "DONOTINHIBIT Wrote" format-string)
+                   ;;   (apply original-message format-string args))
+                   ;; )
+               ))
+      (apply original-func args))))
+
 ;;;###autoload
 (define-minor-mode compile-angel-on-load-mode
   "Toggle `compile-angel-mode' then compiles .el files before they are loaded."
@@ -448,6 +463,8 @@ FEATURE and FILENAME are the same arguments as the `require' function."
   :group 'compile-angel
   (if compile-angel-on-load-mode
       (progn
+        (advice-add 'byte-compile-file :around
+                    #'compile-angel--ignore-useless-messages)
         (when compile-angel-on-load-compile-features
           (compile-angel-compile-features))
         (when compile-angel-on-load-advise-autoload
