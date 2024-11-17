@@ -116,6 +116,7 @@ listed in the `features' variable are compiled.")
 (defvar compile-angel--list-compiled-files (make-hash-table :test 'equal))
 (defvar compile-angel--currently-compiling (make-hash-table :test 'equal))
 (defvar compile-angel--compiling-p nil)
+(defvar compile-angel--force-native-compile nil)
 (defvar compile-angel--postponed-compilations (make-hash-table :test 'equal))
 
 ;;; Functions
@@ -179,7 +180,9 @@ Return nil if it is not native-compiled or if its .eln file is out of date."
     (compile-angel--debug-message "Native-compilation: %s" el-file)
     (let ((inhibit-message (not (or compile-angel-verbose
                                     compile-angel-debug))))
-      (native-compile-async el-file)))
+      (when (or (bound-and-true-p native-comp-jit-compilation)
+                (bound-and-true-p native-comp-deferred-compilation))
+        (native-compile-async el-file))))
 
    (t
     (compile-angel--debug-message
@@ -292,7 +295,8 @@ FEATURE-NAME is a string representing the feature name being loaded."
 
 (defun compile-angel--compile-current-buffer ()
   "Compile the current buffer."
-  (let ((compile-angel-enable-cache nil))
+  (let ((compile-angel-enable-cache nil)
+        (compile-angel--force-native-compile t))
     (when (derived-mode-p 'emacs-lisp-mode)
       (compile-angel--compile-elisp (buffer-file-name (buffer-base-buffer))))))
 

@@ -109,6 +109,7 @@ Here are the main differences:
 - compile-angel-on-save-mode supports compiling indirect buffers (clones).
 - compile-angel-on-load-mode compiles features that have already been loaded to make sure that they are compiled.
 - Compile-Angel uses caching to enhance performance when locating the .el file corresponding to a given feature.
+- When `native-comp-jit-compilation` or `native-comp-deferred-compilation` is non-nil, `compile-angel-on-load-mode` lets Emacs compile, which makes Emacs load the `.eln` file instead of the .elc file.
 
 ## How to make compile-angel behave like auto-compile?
 
